@@ -30,6 +30,7 @@ def get_train_data(date: str, train_years: int) -> pd.DataFrame:
 
 # processing data utils
 
+
 def process_data(df: pd.DataFrame, **kwargs):
     """Wrapper to handle all of the required transformations"""
     limit_stocks: int = kwargs['limit_stocks'] if 'limit_stocks' in kwargs else None
@@ -114,6 +115,7 @@ def gen_dataset(df, limit=None, flip=True):
         _X = np.flip(_X, axis=1)
 
     return _X
+
 
 def split_train_test(X, N, t, test_size=10):
     """ Splits into dataset and test, according to selected point in time t

@@ -35,9 +35,26 @@ class PortfolioTrainer:
         """Call the relevant algorithm according to `self.algorithm` and return estimated Sigma."""
         pass
 
+    def _estimate_returns(self, **kwargs):
+        """Estimates the expected returns of the stocks from the training data"""
+        pass
+
     def _fit_portfolio(self, Sigma, **kwargs) -> np.array:
         """Call the relevant fitting method (e.g., min-var portfolio, tangent min-var, etc.) and return portfolio."""
-        pass
+        # TODO: Check if shorting is allowed or not, then update accordingly
+
+        method = kwargs['type']
+        if method == 'min_var':
+            mu = None
+            if 'target_return' in kwargs.keys():
+                mu = kwargs['target_return']
+            if mu:
+                R = self._estimate_returns()
+                # TODO: Finish this case of portfolio selection
+            else:
+                e = np.ones(Sigma.shape[0])
+                inv_sigma = np.linalg.inv(Sigma)
+                self.portfolio = (e.T @ inv_sigma @ e) * (inv_sigma @ e)
 
     def get_portfolio(self):
         return self.portfolio
