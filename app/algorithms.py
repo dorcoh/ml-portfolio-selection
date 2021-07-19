@@ -15,6 +15,7 @@ class AlgorithmType(Enum):
 
 
 def compute_urm(Sigma_SAM, K):
+    logging.info("compute_urm")
     M = Sigma_SAM.shape[0]
     eigval, eigvec = ordered_eig(Sigma_SAM)
     sigma_URM = eigval[K:].mean()
@@ -25,13 +26,14 @@ def compute_urm(Sigma_SAM, K):
 
 
 def compute_utm(Sigma_SAM, lamb, N):
+    logging.info("compute_utm")
     lambda_p = 2 * lamb / N
     Sigma_UTM, _, _, _ = trans(Sigma_SAM, lambda_p)
     return Sigma_UTM
 
 
-def compute_stm(Sigma_SAM, lamb, N, max_iter=None, epsilon=0.001, solve_t_max_iter=None, solve_t_epsilon=0.0001,
-                verbose=False, debug=False):
+def compute_stm(Sigma_SAM, lamb, N, max_iter=None, epsilon=0.001, solve_t_max_iter=None, solve_t_epsilon=0.0001):
+    logging.info("compute_stm")
     M = Sigma_SAM.shape[0]
     lambda_p = lamb / (N / 2)
     init_R = np.ones((M, 1))
@@ -57,7 +59,7 @@ def compute_stm(Sigma_SAM, lamb, N, max_iter=None, epsilon=0.001, solve_t_max_it
                 break
 
         K = i - 1
-        logging.info("K: {}".format(K))
+        logging.debug("K: {}".format(K))
         chosen_beta = (K * lambda_p + sum_eigval - np.sum(T_eigval[:K])) / (M - (K-1))
         T_eigval = np.array(T_eigval[:K] - lambda_p)
 
@@ -67,14 +69,11 @@ def compute_stm(Sigma_SAM, lamb, N, max_iter=None, epsilon=0.001, solve_t_max_it
             inv_hat_Sigma = inv_hat_Sigma - ((1 / chosen_beta) - (1 / T_eigval[d-1])) * np.outer( T_eigvec[:, d-1], T_eigvec[:, d-1].T)
 
         # update T
-        new_T = solve_T(T, inv_hat_Sigma * Sigma_SAM, True, epsilon=solve_t_epsilon, max_iter=solve_t_max_iter,
-                        verbose=verbose, debug=debug)
+        new_T = solve_T(T, inv_hat_Sigma * Sigma_SAM, True, epsilon=solve_t_epsilon, max_iter=solve_t_max_iter)
         _curr = np.max(np.abs(np.divide(new_T, T) - 1))
-        if debug:
-            logging.info("compute_stm (debug) curr: {}".format(_curr))
+        logging.debug("compute_stm (first) curr: {}".format(_curr))
         if _curr < epsilon or (max_iter is not None and iter > max_iter):
-            if verbose:
-                logging.info("compute_stm curr: {}".format(_curr))
+            logging.debug("compute_stm curr: {}".format(_curr))
             break
         else:
             T = new_T
@@ -88,7 +87,7 @@ def compute_stm(Sigma_SAM, lamb, N, max_iter=None, epsilon=0.001, solve_t_max_it
     return Sigma_STM
 
 
-def solve_T(init_T, A, normalize, epsilon=0.0001, max_iter=50, verbose=False, debug=False):
+def solve_T(init_T, A, normalize, epsilon=0.0001, max_iter=50):
     scale_a = 0.2
     scale_b = 0.5
     T = init_T
@@ -99,11 +98,9 @@ def solve_T(init_T, A, normalize, epsilon=0.0001, max_iter=50, verbose=False, de
         hessian = 2 * A + 2 * np.diag((T ** -2).squeeze())
         dt, _, _, _ = np.linalg.lstsq(-hessian, gradient)
         _curr = np.divide(-gradient.T @ dt, 2)
-        if debug:
-            logging.info("solve_T (debug) curr grad: {}".format(_curr))
+        logging.debug("solve_T curr (first) grad: {}".format(_curr))
         if _curr <= epsilon or (max_iter is not None and i > max_iter):
-            if verbose:
-                logging.info("solve_T curr grad: {}".format(_curr))
+            logging.debug("solve_T curr grad: {}".format(_curr))
             break
         # backtrack
         r = 1
@@ -132,6 +129,7 @@ def solve_T(init_T, A, normalize, epsilon=0.0001, max_iter=50, verbose=False, de
 
 
 def compute_em(Sigma_SAM: np.array, K):
+    logging.info("compute_em")
     M = Sigma_SAM.shape[0]
     eigval, eigvec = ordered_eig(Sigma_SAM)
     Fhalf = np.zeros((M, K))
@@ -161,9 +159,11 @@ def compute_em(Sigma_SAM: np.array, K):
         newFhalf = term1 @ np.linalg.inv(term2)
         newR = np.diag(Sigma_SAM) - np.diag(newFhalf @ term1.T)
 
-        if np.max(np.divide(np.abs((R - newR)), R)) < 0.001:
+        condition = np.max(np.divide(np.abs((R - newR)), R))
+        if condition < 0.001:
             break
         else:
+            logging.debug(f"condition value: {condition}")
             R = newR
             Fhalf = newFhalf
 
