@@ -16,10 +16,9 @@ class FitTestCase(unittest.TestCase):
         self.X = np.load('resources/preprocessed-data.npy')
         self.train, self.test = prepare_for_training(self.X)
 
-    @unittest.skip("does not converge, need to debug.")
     def test_fit_stm(self):
         pt = PortfolioTrainer(algorithm=AlgorithmType.STM)
-        pt.fit(self.train, type='min-var', lamb=63, train_size=self.train.shape[1])
+        pt.fit(self.train, type='min-var', lamb=1e-3, train_size=self.train.shape[1])
 
     def test_fit_utm(self):
         pt = PortfolioTrainer(algorithm=AlgorithmType.UTM)
