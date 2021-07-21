@@ -24,11 +24,12 @@ class PortfolioTrainer:
         self.algorithm = algorithm
         self.portfolio = None
 
-    def fit(self, train: pd.DataFrame, **kwargs):
+    def fit(self, train: np.ndarray, **kwargs):
         """Produce a portfolio, should provide required hyper-parameters."""
         Sigma_SAM = compute_sigma_sample(dataset=train)
         Sigma = self._estimate_sigma(Sigma_SAM, **kwargs)
-        self.portfolio = self._fit_portfolio(Sigma, **kwargs)
+        returns = self._estimate_returns(train)
+        self._fit_portfolio(Sigma, returns, **kwargs)
 
     def _estimate_sigma(self, Sigma_SAM, **kwargs) -> np.array:
         """Call the relevant algorithm according to `self.algorithm` and return estimated Sigma."""
@@ -44,25 +45,36 @@ class PortfolioTrainer:
 
         return Sigma
 
-    def _estimate_returns(self, **kwargs):
+    def _estimate_returns(self, train : np.ndarray, **kwargs):
         """Estimates the expected returns of the stocks from the training data"""
-        pass
+        method = kwargs['method'] if 'method' in kwargs.keys() else 'Naive'
+        returns = []
+        if method == 'Naive':
+            for stock in train:
+                estimates = list(stock / np.roll(stock, 1))[1:]
+                returns.append(np.average(estimates))
+        elif method == "other":
+            pass
+        return np.array(returns)
 
-    def _fit_portfolio(self, Sigma, **kwargs) -> np.array:
+    def _fit_portfolio(self, Sigma, returns, **kwargs) -> np.array:
         """Call the relevant fitting method (e.g., min-var portfolio, tangent min-var, etc.) and return portfolio."""
         # TODO: Check if shorting is allowed or not, then update accordingly
+
         method = kwargs['type']
-        if method == 'min_var':
-            mu = None
+        if method == 'min-var':
+            gamma = None
             if 'target_return' in kwargs.keys():
-                mu = kwargs['target_return']
-            if mu:
-                R = self._estimate_returns()
-                # TODO: Finish this case of portfolio selection
+                gamma = kwargs['target_return']
+            if gamma:
+                inv_sigma = np.linalg.inv(Sigma)
+                e = np.ones(Sigma.shape[0])
+                self.portfolio = (1 - gamma) * (returns.T @ inv_sigma @ returns) / (e.T @ inv_sigma @ returns)
+                self.portfolio += gamma * (returns.T @ inv_sigma @ e) / (e.T @ inv_sigma @ e)
             else:
                 e = np.ones(Sigma.shape[0])
                 inv_sigma = np.linalg.inv(Sigma)
-                self.portfolio = (e.T @ inv_sigma @ e) * (inv_sigma @ e)
+                self.portfolio = (inv_sigma @ e)/(e.T @ inv_sigma @ e)
 
     def get_portfolio(self):
         return self.portfolio
