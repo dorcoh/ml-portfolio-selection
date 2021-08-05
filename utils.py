@@ -147,6 +147,13 @@ class DataLoader:
         train, test = prepare_for_training(self.X, **kwargs)
         return train, test
 
+    @classmethod
+    def from_ndarray(cls, X: np.ndarray):
+        """Create an instance of this class from a processed self.X"""
+        self = cls.__new__(cls)
+        self.X = X
+        return self
+
 
 def log_likelihood(Sigma, Sigma_SAM, N) -> float:
     """ Compute log-likelihood out of estimated Sigma and and sampled Sigma.
