@@ -24,7 +24,7 @@ class EvaluatorTestCase(unittest.TestCase):
         evaluator = PortfolioEvaluator()
         fit_kwargs = {
             'method': 'min-var',
-            # 'target_return': 0.8,
+            'target_return': 0.8,
             'lamb': 1e-3,
         }
         pt = evaluator.compute_portfolio(self.train, **fit_kwargs)
@@ -38,10 +38,10 @@ class EvaluatorTestCase(unittest.TestCase):
         evaluator = PortfolioEvaluator()
         auto_fit_kwargs = {
             'hyper-params': {
-                # 'target_return': (-1.5, 1.5),
+                'target_return': (-1.5, 1.5),
                 'lamb': (1e-3 - (1e-10), 1e-3 + (1e-10))
             },
-            'trials': 10
+            'trials': 100
         }
 
         evaluator.compute_multiple_portfolios(self.data_loader, **auto_fit_kwargs)
@@ -53,7 +53,7 @@ class EvaluatorTestCase(unittest.TestCase):
 
         # for testing plot function
         # with open('resources/evaluator.pickle', 'wb') as handle:
-        #     pickle.dump(evaluator, handle, protocol=pickle.HIGHEST_PROTOCOL)
+          #  pickle.dump(evaluator, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     def test_plot(self):
         self.evaluator.plot()

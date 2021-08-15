@@ -19,7 +19,7 @@ class FitTestCase(unittest.TestCase):
 
     def test_fit_stm(self):
         pt = PortfolioTrainer(algorithm=AlgorithmType.STM)
-        pt.fit(self.train, type='min-var', lamb=1e-3, train_size=self.train.shape[1])
+        pt.fit(self.train, type='min-var', lamb=1e-3, train_size=self.train.shape[1], target_return=0.5)
         portfolio = pt.get_portfolio()
         assert isinstance(portfolio, np.ndarray)
         assert len(portfolio) > 1

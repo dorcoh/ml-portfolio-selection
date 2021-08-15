@@ -72,8 +72,8 @@ class PortfolioTrainer:
             if gamma:
                 inv_sigma = np.linalg.inv(Sigma)
                 e = np.ones(Sigma.shape[0])
-                self.portfolio = (1 - gamma) * (returns.T @ inv_sigma @ returns) / (e.T @ inv_sigma @ returns)
-                self.portfolio += gamma * (returns.T @ inv_sigma @ e) / (e.T @ inv_sigma @ e)
+                self.portfolio = (1 - gamma) * (inv_sigma @ returns) / (e.T @ inv_sigma @ returns)
+                self.portfolio += gamma * (inv_sigma @ e) / (e.T @ inv_sigma @ e)
             else:
                 e = np.ones(Sigma.shape[0])
                 inv_sigma = np.linalg.inv(Sigma)
@@ -87,6 +87,7 @@ class PortfolioTrainer:
 
     def get_estimated_returns(self):
         return self.returns
+
 
 
 class PortfolioEvaluator:
@@ -150,7 +151,7 @@ class PortfolioEvaluator:
             pt = self.compute_portfolio(train, **hyper_params_dict)
             self.results.append(pt)
 
-        pass
+
 
     def _gen_hyperparams(self, **kwargs):
         """ Generate a single configuration of hyper-parameters.
