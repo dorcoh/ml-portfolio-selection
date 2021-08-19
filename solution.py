@@ -6,9 +6,25 @@ import pandas as pd
 from app.algorithms import compute_urm, compute_utm, compute_em, compute_stm, AlgorithmType
 from utils import compute_sigma_sample, DataLoader
 
+DATALOADER_CONFIG = {
+    # limit num of stocks
+    'limit_stocks': None,
+    # window size for computing volatility
+    'norm_window_size': 50,
+    # limit num of stocks in processed dataset
+    'limit_dataset': None,
+    # use the transposed (processed) dataset
+    'flip_dataset': None,
+    # training set size
+    'desired_trainsize': 100,
+    # in which sample the test set "starts"
+    'test_start': 110,
+    # number of samples for test set
+    'test_size': 10
+}
 
 def get_portfolio(train: pd.DataFrame):
-    loader = DataLoader(train)
+    loader = DataLoader(train, **DATALOADER_CONFIG)
     train, test = loader.split_data()
 
     # TODO: wrap with a class for auto-tuning of the best portfolio
