@@ -41,7 +41,7 @@ class EvaluatorTestCase(unittest.TestCase):
                 'target_return': (-1.5, 1.5),
                 'lamb': (1e-3 - (1e-10), 1e-3 + (1e-10))
             },
-            'trials': 100
+            'trials': 5
         }
 
         evaluator.compute_multiple_portfolios(self.data_loader, **auto_fit_kwargs)

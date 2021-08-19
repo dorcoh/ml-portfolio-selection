@@ -60,10 +60,8 @@ def prepare_for_training(X, **kwargs):
 
 def pre_process(df: pd.DataFrame, limit_stocks=70):
     logging.info(f"pre_process")
-    # first row has nans
-    _df = df.iloc[1:]
-    # drop any stocks which has nan values
-    _df = _df.dropna(axis=1)
+
+    _df = handle_nans(df)
 
     if limit_stocks is not None:
         _df = _df.iloc[:, :limit_stocks].reset_index(drop=True)
@@ -71,6 +69,17 @@ def pre_process(df: pd.DataFrame, limit_stocks=70):
     logging.info(f"post pre_process. df shape: {_df.shape}")
     return _df
 
+def handle_nans(df: pd.DataFrame):
+    nan_cols = df.columns[df.isna().any()].tolist()
+    for col in nan_cols:
+        if df[col].isnull().all():
+            # all nans, fill with 0
+            df[col] = 0
+        else:
+            # some nans
+            df[col].fillna(df[col].mean())
+
+    return df
 
 def log_returns(df: pd.DataFrame):
     logging.info(f"log_returns")
