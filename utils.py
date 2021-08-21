@@ -26,7 +26,13 @@ def get_train_data(date: str, train_years: int) -> pd.DataFrame:
     start_date, end_date = get_start_end_date(date, train_years)
     tickers = get_tickers()
 
-    return yf.download(tickers, start_date, end_date)['Adj Close']
+    fixed_tickers = []
+    for ticker in tickers:
+        if '.' in ticker:
+            fixed_tickers.append(ticker.replace('.', '-'))
+        else:
+            fixed_tickers.append(ticker)
+    return yf.download(fixed_tickers, start_date, end_date)['Adj Close']
 
 # processing data utils
 
@@ -34,13 +40,11 @@ def get_train_data(date: str, train_years: int) -> pd.DataFrame:
 def process_data(df: pd.DataFrame, **kwargs):
     """Wrapper to handle all of the required transformations"""
     limit_stocks: int = kwargs['limit_stocks'] if 'limit_stocks' in kwargs else None
-    ldf = pre_process(df, limit_stocks=limit_stocks)
-
+    df = pre_process(df, limit_stocks=limit_stocks)
+    ldf = log_returns(df)
     cdf = clip_log_returns(ldf)
-
     norm_window_size: int = kwargs['norm_window_size'] if 'norm_window_size' in kwargs else 50
     ndf = normalize_with_vol(cdf, norm_window_size)
-
     limit_dataset: bool = kwargs['limit_dataset'] if 'limit_dataset' in kwargs else None
     flip_dataset: bool = kwargs['flip_dataset'] if 'flip_dataset' in kwargs else None
     X = gen_dataset(ndf, limit=limit_dataset, flip=flip_dataset)
@@ -69,17 +73,20 @@ def pre_process(df: pd.DataFrame, limit_stocks=70):
     logging.info(f"post pre_process. df shape: {_df.shape}")
     return _df
 
+
 def handle_nans(df: pd.DataFrame):
     nan_cols = df.columns[df.isna().any()].tolist()
+    fillna_dict = {}
     for col in nan_cols:
         if df[col].isnull().all():
             # all nans, fill with 0
-            df[col] = 0
+            fillna_dict[col] = 0
         else:
             # some nans
-            df[col].fillna(df[col].mean())
-
+            fillna_dict[col] = df[col].mean()
+    df = df.fillna(value=fillna_dict)
     return df
+
 
 def log_returns(df: pd.DataFrame):
     logging.info(f"log_returns")
@@ -87,6 +94,8 @@ def log_returns(df: pd.DataFrame):
     cols = [x for x in df.columns]
     for col in cols:
         _df[col] = np.log(df[col] / df[col].shift(1))
+
+    _df = handle_nans(_df)
 
     logging.info(f"post log_returns. df shape: {_df.shape}")
     return _df.iloc[1:]
@@ -110,6 +119,7 @@ def normalize_with_vol(df, window_size=50):
     _df = df / vol
     __df = _df.iloc[window_size:].reset_index(drop=True)
     logging.info(f"post normalize_with_vol. df shape: {__df.shape}")
+    __df = handle_nans(__df)
     return __df
 
 

@@ -1,5 +1,4 @@
 import argparse
-
 from solution import *
 from utils import get_train_data
 

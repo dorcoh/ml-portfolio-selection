@@ -5,6 +5,7 @@ import pandas as pd
 
 from app.algorithms import compute_urm, compute_utm, compute_em, compute_stm, AlgorithmType
 from utils import compute_sigma_sample, DataLoader
+from imputation import imputation
 
 DATALOADER_CONFIG = {
     # limit num of stocks
@@ -23,31 +24,37 @@ DATALOADER_CONFIG = {
     'test_size': 10
 }
 
+
 def get_portfolio(train: pd.DataFrame):
-    loader = DataLoader(train, **DATALOADER_CONFIG)
-    train, test = loader.split_data()
+    imp = imputation(data=train)
+    imp.impute_all()
+    imp_train = imp.get_imputed()
+    loader = DataLoader(imp_train, **DATALOADER_CONFIG)
+    final_train = loader.get_data()
 
     # TODO: wrap with a class for auto-tuning of the best portfolio
-    pt = PortfolioTrainer(algorithm=AlgorithmType.STM)
-    pt.fit(train, type='min-var', lamb=70, K=35, train_size=train.shape[1])
+    pt = PortfolioTrainer(imp_train.to_numpy().T, final_train, algorithm=AlgorithmType.STM)
+    pt.fit(type='min-var', lamb=70, K=35, train_size=imp_train.shape[1])
     portfolio = pt.get_portfolio()
 
-    return np.ones(train.shape[1]) / train.shape[1]
+    return portfolio
 
 
 class PortfolioTrainer:
     """This class goal is generate a portfolio according to desired factor-model algorithm."""
-    def __init__(self, algorithm: AlgorithmType = AlgorithmType.STM):
+    def __init__(self, raw_train, processed_train, algorithm: AlgorithmType = AlgorithmType.STM):
+        self.raw_train = raw_train
+        self.processed_train = processed_train
         self.algorithm = algorithm
         self.portfolio = None
         self.returns = None
         self.Sigma = None
 
-    def fit(self, train: np.ndarray, **kwargs):
+    def fit(self, **kwargs):
         """Produce a portfolio, should provide required hyper-parameters."""
-        Sigma_SAM = compute_sigma_sample(dataset=train)
+        Sigma_SAM = compute_sigma_sample(dataset=self.processed_train)
         self.Sigma = self._estimate_sigma(Sigma_SAM, **kwargs)
-        self.returns = self._estimate_returns(train)
+        self.returns = PortfolioTrainer._estimate_returns(self.raw_train)
         self._fit_portfolio(self.Sigma, self.returns, **kwargs)
 
     def _estimate_sigma(self, Sigma_SAM, **kwargs) -> np.array:
@@ -64,7 +71,8 @@ class PortfolioTrainer:
 
         return Sigma
 
-    def _estimate_returns(self, train : np.ndarray, **kwargs):
+    @staticmethod
+    def _estimate_returns(train : np.ndarray, **kwargs):
         """Estimates the expected returns of the stocks from the training data"""
         method = kwargs['method'] if 'method' in kwargs.keys() else 'Naive'
         returns = []
