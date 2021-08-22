@@ -25,14 +25,10 @@ def get_start_end_date(date: str, train_years: int) -> Tuple[str, str]:
 def get_train_data(date: str, train_years: int) -> pd.DataFrame:
     start_date, end_date = get_start_end_date(date, train_years)
     tickers = get_tickers()
+    tickers.remove('BF.B')
+    tickers.remove('BRK.B')
 
-    fixed_tickers = []
-    for ticker in tickers:
-        if '.' in ticker:
-            fixed_tickers.append(ticker.replace('.', '-'))
-        else:
-            fixed_tickers.append(ticker)
-    return yf.download(fixed_tickers, start_date, end_date)['Adj Close']
+    return yf.download(tickers, start_date, end_date)['Adj Close']
 
 # processing data utils
 

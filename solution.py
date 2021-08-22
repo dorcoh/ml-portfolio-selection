@@ -26,6 +26,7 @@ DATALOADER_CONFIG = {
 
 
 def get_portfolio(train: pd.DataFrame):
+    tickers = list(train.columns)
     imp = imputation(data=train)
     imp.impute_all()
     imp_train = imp.get_imputed()
@@ -35,8 +36,11 @@ def get_portfolio(train: pd.DataFrame):
     # TODO: wrap with a class for auto-tuning of the best portfolio
     pt = PortfolioTrainer(imp_train.to_numpy().T, final_train, algorithm=AlgorithmType.STM)
     pt.fit(type='min-var', lamb=70, K=35, train_size=imp_train.shape[1])
-    portfolio = pt.get_portfolio()
+    portfolio_array = pt.get_portfolio()
 
+    portfolio = {}
+    for name, val in zip(tickers, portfolio_array):
+        portfolio[name] = val
     return portfolio
 
 
