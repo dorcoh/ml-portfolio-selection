@@ -33,10 +33,9 @@ def get_portfolio(train: pd.DataFrame, **kwargs):
     loader = DataLoader(imp_train, **DATALOADER_CONFIG)
     final_train = loader.get_data()
 
-    # TODO: wrap with a class for auto-tuning of the best portfolio
-    gamma = kwargs['target_return']
+    gamma = -2.0
     pt = PortfolioTrainer(imp_train.to_numpy().T, final_train, algorithm=AlgorithmType.STM)
-    pt.fit(type='min-var', target_return=gamma, lamb=70, K=35, train_size=imp_train.shape[1])
+    pt.fit(type='min-var', target_return=gamma, lamb=10, K=35, train_size=imp_train.shape[1])
     portfolio_array = pt.get_portfolio()
 
     portfolio = {}

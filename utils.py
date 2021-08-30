@@ -58,7 +58,7 @@ def prepare_for_training(X, **kwargs):
     return train, test
 
 
-def pre_process(df: pd.DataFrame, limit_stocks=70):
+def pre_process(df: pd.DataFrame, limit_stocks=None):
     logging.info(f"pre_process")
 
     _df = handle_nans(df)
@@ -82,6 +82,21 @@ def handle_nans(df: pd.DataFrame):
             fillna_dict[col] = df[col].mean()
     df = df.fillna(value=fillna_dict)
     return df
+
+
+def daily_returns(vals: np.array):
+    logging.info(f"log_returns")
+    vals = vals.T
+    rets = None
+    for i in range(vals.shape[0]-1):
+        daily_ret = vals[i+1]/vals[i]
+        try:
+            rets = np.append(rets, [daily_ret], axis=0)
+        except:
+            rets = np.array([daily_ret])
+
+    logging.info(f"post log_returns. df shape: {rets.shape}")
+    return rets.T
 
 
 def log_returns(df: pd.DataFrame):
@@ -153,13 +168,21 @@ class DataLoader:
     """this class is responsible for producing our datasets.
     It should process the data once, but able to generate multiple splitting configurations"""
     def __init__(self, df: pd.DataFrame, **kwargs):
+        self.original_data = df
         self.X = process_data(df, **kwargs)
 
     def get_data(self):
         return self.X
 
     def split_data(self, **kwargs):
-        train, test = prepare_for_training(self.X, **kwargs)
+        process_test = kwargs['process_test'] if 'process_test' in kwargs else False
+        if not process_test:
+            _, test = prepare_for_training(self.original_data.values.T, **kwargs)
+            test = daily_returns(test)
+            train, _ = prepare_for_training(self.X, **kwargs)
+        else:
+            train, test = prepare_for_training(self.X, **kwargs)
+
         return train, test
 
     @classmethod
